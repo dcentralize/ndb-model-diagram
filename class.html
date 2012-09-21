@@ -1,0 +1,14 @@
+<table border="0" cellborder="0" cellpadding="3">
+    <tr>
+        <td bgcolor="black" align="center" colspan="3">
+            <font color="white">{{ name }}</font>
+        </td>
+    </tr>
+    {% for p in properties %}
+    <tr>
+        <td align="left" port="r0">{{ p.name }}</td>
+        <td>:</td>
+        <td align="right" port="r0">{{ p.type }}</td>
+    </tr>
+    {% endfor %}
+</table>
