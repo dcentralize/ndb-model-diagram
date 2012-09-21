@@ -59,5 +59,7 @@ if __name__ == "__main__" and len(sys.argv) > 1:
         ret += rel
     
     ret += '}'
-    print ret
+    print(ret)
+else:
+    print("Usage:\n  %s my_models_package | dot -Tsvg -o x.svg" % sys.argv[0])
 
