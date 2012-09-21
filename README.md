@@ -8,6 +8,8 @@ Usage example:
 
 Dependencies
 ------------
+
 python-pygraphviz
+
 In Ubuntu install it using:
     sudo apt-get install python-pygraphviz
