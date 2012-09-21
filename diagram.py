@@ -20,8 +20,10 @@ def create_class(cls):
             multiple = property._repeated
             if property.__class__ == google.appengine.ext.ndb.model.KeyProperty:
                 j.type = str(property._kind)
+                j.style = 'color="red"'
                 relations += ['%s -> %s [headlabel="1" taillabel="%s" arrowhead="none"];\n' % (str(property._kind), cls.__name__, ("*" if multiple else "1"))]
             else:
+                j.style = ''
                 j.type = str(property).split("Property")[0]
             if multiple:
                 j.type += "[]"
