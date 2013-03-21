@@ -1,65 +1,101 @@
 #!/usr/bin/python
 
-import google
+from __future__ import unicode_literals
+
 import jinja2
 import os
+import re
 import sys
+from google.appengine.ext.ndb.model import KeyProperty
+
+
+relations = []
+help_message = """Generates a class diagram for Google Appengine models.
+
+
+Example usage:
+  %s module | dot -Tsvg -o x.svg
+
+  note: module is the module name, not the python file.
+
+"""
+
 
 class Jin():
-    pass
+    """
+    An empty class solely with the purpose of being an object which can
+    be instantiated.
 
-def create_class(cls):
+    """
+    style = ''
+
+
+def create_table(cls):
+    """
+    Generates a table for a class and puts its relations in the
+    relations list.
+
+    """
     global relations
     name = cls.__name__
     properties = []
     for p in cls._properties:
-        if p != "class":
-            j = Jin()
-            j.name = p
-            property = cls._properties[p]
-            multiple = property._repeated
-            if property.__class__ == google.appengine.ext.ndb.model.KeyProperty:
-                j.type = str(property._kind)
-                j.style = 'color="red"'
-                relations += ['%s -> %s [headlabel="1" taillabel="%s" arrowhead="none"];\n' % (str(property._kind), cls.__name__, ("*" if multiple else "1"))]
-            else:
-                j.style = ''
-                j.type = str(property).split("Property")[0]
-            if multiple:
-                j.type += "[]"
-            properties += [j]
-    
-    try:
-        relations += ['%s -> %s [arrowhead="onormal"];\n' % (name, cls.__bases__[0].__name__)]
-    except:
-        pass
-    template = jinja.get_template("class.html")
-    template_values = {
-        "properties": properties,
-        "name": name
-    }
-    return template.render(template_values).replace("\n", "").replace("    ", "")
-
-if __name__ == "__main__" and len(sys.argv) > 1:
-    module = __import__(sys.argv[1])
-    jinja = jinja2.Environment(loader=jinja2.FileSystemLoader(os.path.dirname(__file__)))
-    relations = []
-    ret = 'digraph test {\n' +\
-        'rankdir=LR;\n' +\
-        'size="8,5"\n' +\
-        'node [shape = circle];\n'
-    
-    for model in dir(module):
+        if p == 'class':  # This is used for subclassing PolyModels
+            continue
+        j = Jin()
+        j.name = p
+        property = cls._properties[p]
+        multi = property._repeated
+        if issubclass(type(property), KeyProperty):
+            j.type = property._kind
+            j.style = 'color="red"'
+            relations += [('%s -> %s [headlabel="1" taillabel="%s" ' +
+                                    'arrowhead="none"];') % (property._kind,
+                                    name, ('*' if multi else '1'))]
+        else:
+            j.type = unicode(property).split('Property')[0]
+        if multi:
+            j.type += '[]'
+        properties += [j]
+    # Create arrows for inherited classes
+    for base in cls.__bases__:
         try:
-            ret += '"%s" [style="filled, bold" penwidth=5 fillcolor="white" shape="Mrecord" label =<%s>];\n' % (model, create_class(eval("module.%s" % model)))
+            relations += ['%s -> %s [arrowhead="onormal"];\n' % (
+                                                        name, base.__name__)]
         except:
             pass
-    
-    for rel in relations:
-        ret += rel
-    
-    ret += '}'
-    print(ret)
-else:
-    print("Usage:\n  %s my_models_package | dot -Tsvg -o x.svg" % sys.argv[0])
 
+    doc = cls.__doc__
+    if doc:
+        # Only use the text before the first empty line
+        doc = re.sub('[ ]{2,}', '', doc).split('\n\n')[0].split('\n')
+    return jinja.get_template("class.html").render({
+        'properties': properties,
+        'name': name,
+        'doc': doc
+    })
+
+
+if __name__ == '__main__':
+    if len(sys.argv) < 2:
+        print(help_message % sys.argv[0])
+        sys.exit(0)
+
+    module = __import__(sys.argv[1])
+    jinja = jinja2.Environment(loader=jinja2.FileSystemLoader(os.path.dirname(
+                                                                    __file__)))
+    ret = '\n'.join([
+        'digraph test {',
+        'rankdir=LR;',
+        'size="8,5"',
+        'node [shape = circle];'])
+
+    for model in dir(module):
+        try:
+            ret += ('"%s" [style="filled, bold" penwidth=5 fillcolor="white"' +
+                                ' shape="Mrecord" label =<%s>];\n') % (model,
+                                create_table(eval("module.%s" % model)))
+        except:
+            pass
+
+    print(ret + ''.join(relations) + '}')

@@ -4,11 +4,26 @@
             <font color="white">{{ name }}</font>
         </td>
     </tr>
+    {% if doc %}
+        {% for d in doc %}
+            <tr>
+                <td align="left" colspan="3">
+                    {{ d }}
+                </td>
+            </tr>
+        {% endfor %}
+    {% endif %}
     {% for p in properties %}
-    <tr>
-        <td align="left" port="r0"><font {{ p.style }}>{{ p.name }}</font></td>
-        <td><font {{ p.style }}>:</font></td>
-        <td align="right" port="r0"><font {{ p.style }}>{{ p.type }}</font></td>
-    </tr>
+        <tr>
+            <td align="left" port="r0">
+                <font {{ p.style }}>{{ p.name }}</font>
+            </td>
+            <td>
+                <font {{ p.style }}>:</font>
+            </td>
+            <td align="right" port="r0">
+                <font {{ p.style }}>{{ p.type }}</font>
+            </td>
+        </tr>
     {% endfor %}
 </table>
